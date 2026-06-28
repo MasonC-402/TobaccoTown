@@ -42,7 +42,7 @@ except ImportError:
         "  uv run playwright install chromium\n"
     )
 
-DEFAULT_HUMIDOR_ID = ""
+DEFAULT_HUMIDOR_ID = ""  # paste your humidor UUID here, or pass --humidor-id on the CLI
 API_BASE = "https://api.cigarscanner.com/api/cigarlogs/listing"
 HUMIDOR_URL = "https://www.cigarscanner.com/tabs/my-humidors/{hid}"
 LOGIN_URL = "https://www.cigarscanner.com/login"

@@ -22,8 +22,8 @@ Icon?
 ._*
 .icloud
 
-# ---- App bundle binary (regenerate with build_app.sh) ----
-TobaccoTown.app/Contents/MacOS/TobaccoTown
+# ---- App bundle (machine-specific; regenerate with build_app.sh) ----
+TobaccoTown.app/
 
 # ---- Local data ----
 data/
