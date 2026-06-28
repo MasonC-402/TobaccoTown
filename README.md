@@ -13,46 +13,78 @@ A desktop GUI app for cigar and pipe tobacco enthusiasts. Built with Python and 
 
 ## Requirements
 
-- macOS 13+
-- Python 3.12 (managed via `uv`)
+- macOS 13+, Windows 10+, or Linux
+- Python 3.12 (managed automatically via `uv`)
 
 ## Setup
 
+**1. Install uv**
+
+macOS / Linux:
 ```bash
-# Install uv if you don't have it
-curl -Ls https://astral.sh/uv/install.sh | sh
-
-# Install dependencies and pin Python 3.12
-uv sync
-
-# Build the .app bundle (copies the Python binary so Finder can launch it)
-chmod +x build_app.sh
-./build_app.sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Then double-click **TobaccoTown.app** to launch, or run directly:
+Windows (PowerShell):
+```powershell
+winget install astral-sh.uv
+# or: irm https://astral.sh/uv/install.ps1 | iex
+```
+
+**2. Install dependencies**
+
+```bash
+uv sync
+```
+
+**3. Run the app**
 
 ```bash
 uv run app.py
 ```
 
+### macOS — optional .app bundle
+
+If you'd like to launch from Finder or Spotlight, build the app bundle:
+
+```bash
+chmod +x build_app.sh
+./build_app.sh
+```
+
+Then double-click **TobaccoTown.app** to launch. This is macOS-only.
+
 ## CigarScanner Import
 
-TobaccoTown can import your humidor from a CigarScanner CSV export.
+TobaccoTown can import your humidor from CigarScanner automatically.
 
-1. Open the **Import** page in the app and click **Open CigarScanner in Terminal**
-2. Follow the terminal prompts — a browser will open so you can log in
+1. Open the **Import** page in the app and click **Open Exporter**
+2. A terminal window opens and runs the exporter — complete any Cloudflare check and log in if prompted
 3. Scroll your humidor list top-to-bottom, then press ENTER in the terminal
 4. The CSV is written to `output/humidor_export.csv`
-5. Back in the app, click **Choose CSV** and select that file
+5. Click **Reload Humidor** in the app to load the new data
 
 The exporter works by watching CigarScanner's own API traffic in a real Chromium
 browser (via Playwright), so no scraping or reverse-engineering is involved.
 
-### CigarScanner exporter setup (first time only)
+The app launches `run.sh` on macOS/Linux and `run.bat` on Windows automatically.
+
+### First-time Chromium setup
+
+The exporter will install Chromium automatically on first run. You can also do it manually:
 
 ```bash
 uv run playwright install chromium
+```
+
+### Resetting your saved login session
+
+```bash
+# macOS / Linux
+./run.sh --reset
+
+# Windows
+run.bat --reset
 ```
 
 ## Data
