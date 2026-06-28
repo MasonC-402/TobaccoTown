@@ -3,7 +3,7 @@ pick-a-stick.py
 Helps you pick a cigar from a list of cigars (usually your humidor collection exported from cigarscanner.com)
 This program will randomly pick out a cigar to save you from decision paralysis. It will also give you the option to filter by brand, size, and strength. I plan to add sommelier type recommendations in the future, but for now, this is a simple random picker.
 
-Author/Maintainer: Mason C.
+Author/Maintainer: Mason
 06/2026
 """
 
