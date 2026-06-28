@@ -1,89 +1,62 @@
-# Cigar Scanner humidor exporter
+# TobaccoTown
 
-Exports your Cigar Scanner humidor to a clean CSV by talking to the app's own
-data API.
+A desktop GUI app for cigar and pipe tobacco enthusiasts. Built with Python and customtkinter.
 
-## How it works
+## Features
 
-Cigar Scanner is a JavaScript single-page app. Its cigar data is not in the page
-HTML; the app fetches it from `api.cigarscanner.com` after you log in, paging
-20 records at a time. This script:
+- **Humidor** — browse your cigar collection imported from CigarScanner, with filterable columns (name, brand, size, quantity, rating, price)
+- **Pick-a-Stick** — randomly pick a cigar from your humidor with an animated slot-machine reveal; filter by brand or size first
+- **Pipe Tobacco** — manage your pipe tobacco collection with blend, type, cut, tin date, quantity, and notes
+- **My Pipes** — inventory of your physical smoking pipes (maker, shape, material, finish, condition, price, notes)
+- **Journal** — tasting notes for any cigar or tobacco you've smoked
+- **Import** — import your humidor from CigarScanner via CSV export
 
-1. Opens a real Chromium browser (via Playwright).
-2. Lets you log in and clear any Cloudflare check **by hand** (the script never
-   touches the CAPTCHA and never reloads in a loop).
-3. Watches the app's network traffic, captures the listing endpoint that returns
-   your cigars, and grabs your session auth.
-4. Pages that endpoint (skip=0,20,40...) until it's empty, flattens the nested
-   JSON into named columns, and writes the CSV.
+## Requirements
+
+- macOS 13+
+- Python 3.12 (managed via `uv`)
 
 ## Setup
 
 ```bash
-uv add playwright
+# Install uv if you don't have it
+curl -Ls https://astral.sh/uv/install.sh | sh
+
+# Install dependencies and pin Python 3.12
+uv sync
+
+# Build the .app bundle (copies the Python binary so Finder can launch it)
+chmod +x build_app.sh
+./build_app.sh
+```
+
+Then double-click **TobaccoTown.app** to launch, or run directly:
+
+```bash
+uv run app.py
+```
+
+## CigarScanner Import
+
+TobaccoTown can import your humidor from a CigarScanner CSV export.
+
+1. Open the **Import** page in the app and click **Open CigarScanner in Terminal**
+2. Follow the terminal prompts — a browser will open so you can log in
+3. Scroll your humidor list top-to-bottom, then press ENTER in the terminal
+4. The CSV is written to `output/humidor_export.csv`
+5. Back in the app, click **Choose CSV** and select that file
+
+The exporter works by watching CigarScanner's own API traffic in a real Chromium
+browser (via Playwright), so no scraping or reverse-engineering is involved.
+
+### CigarScanner exporter setup (first time only)
+
+```bash
 uv run playwright install chromium
 ```
 
-## Run
+## Data
 
-Easiest is the runner script:
-
-```bash
-chmod +x run.sh
-./run.sh            # normal run, keeps you logged in between runs
-./run.sh --reset    # wipe the saved login (.cs_profile) and start fresh
-```
-
-Or directly with the subcommands:
-
-```bash
-uv run main.py export --dump-json   # page the endpoint, write CSV (+ raw JSON)
-uv run main.py discover             # dump every API response to debug/ (troubleshooting)
-```
-
-When the browser opens:
-1. Clear any Cloudflare "verify you are human" check yourself.
-2. Log in if prompted.
-3. Open your humidor and **scroll the cigar list top to bottom** once. Scrolling
-   is what makes the app fetch the cigars, which is what the script listens for.
-4. Return to the terminal and press ENTER.
-
-Output: written to the `output/` folder inside the project:
-`output/humidor_export.csv` (and `output/humidor_raw.json` with `--dump-json`).
-
-## CSV columns
-
-The API nests cigar attributes under `CigarDetails` (with further nesting for
-ratings and prices). The exporter flattens these into:
-
-Name, Quantity, AvgRating, RatingCount, MyRating, MyNote, MyComment, Length,
-RingGauge, SinglePriceMin, SinglePriceMax, BoxPriceMin, BoxPriceMax, MinBoxQty,
-MaxBoxQty, PricePaid, Location, DateAdded, ModifiedOn, IsCustom, SmokingTime,
-ImageUrl, ProductId, LineId, EntryId.
-
-- `Quantity` is how many you have; a smoked-out cigar may show 0.
-- `AvgRating` / `RatingCount` are the community rating; `MyRating` / `MyComment`
-  are your own review if you left one.
-- `PricePaid` is the price recorded on your entry (often blank); the
-  Single/Box price columns are reference retail prices.
-
-## Subcommands
-
-- `export` — the normal path. Pages the cigar endpoint and writes CSV.
-  - `--out <file>`      custom output filename (default humidor_export.csv)
-  - `--dump-json`       also write humidor_raw.json
-  - `--humidor-id <id>` use a different humidor
-- `discover` — troubleshooting. Saves every API JSON response to `debug/` and
-  reports which ones contain record lists, so you can confirm the endpoint.
-
-## Notes
-
-- The project can live anywhere (e.g. `Tobacco Town/get-humidor/` in iCloud
-  Drive). All paths (`output/`, `.cs_profile/`, `debug/`) are anchored to the
-  script's own folder, and `run.sh` cd's into that folder first, so it works no
-  matter where you launch it from.
-- Your login is cached in a local `.cs_profile/` folder so you don't re-auth (and
-  re-trigger Cloudflare) every run. It holds your session, so keep it private.
-  Delete it (or use `./run.sh --reset`) only when the session is broken.
-- The script never solves or clicks the Cloudflare challenge. If you get blocked,
-  wait a few minutes and confirm the site loads in your normal browser first.
+All pipe tobacco, smoking pipe, and journal entries are stored locally in
+`data/tobaccotown.db` (SQLite). The humidor is loaded fresh from the CSV each
+launch — the CSV is the source of truth for your cigar inventory.
