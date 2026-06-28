@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import math
+import platform
 import random
 import re
 import subprocess
@@ -12,6 +13,8 @@ import tkinter as tk
 from datetime import date as _today
 from pathlib import Path
 from tkinter import messagebox, ttk
+
+_OS = platform.system()  # "Darwin", "Windows", "Linux"
 
 try:
     import customtkinter as ctk
@@ -29,6 +32,17 @@ if str(PROJECT_DIR) not in sys.path:
 import db
 
 HUMIDOR_CSV = PROJECT_DIR / "output" / "humidor_export.csv"
+
+# ── Cross-platform fonts ─────────────────────────────────────────────
+if _OS == "Darwin":
+    FONT_DISPLAY = "SF Pro Display"
+    FONT_TEXT    = "SF Pro Text"
+elif _OS == "Windows":
+    FONT_DISPLAY = "Segoe UI"
+    FONT_TEXT    = "Segoe UI"
+else:
+    FONT_DISPLAY = "Ubuntu"
+    FONT_TEXT    = "Ubuntu"
 
 # ── Color palette ────────────────────────────────────────────────────
 BG          = "#1a1917"
@@ -55,10 +69,10 @@ def _style_treeview(root: tk.Misc) -> None:
     s.configure("TT.Treeview",
         background=TREE_BG, foreground=TEXT,
         fieldbackground=TREE_BG, rowheight=30,
-        font=("SF Pro Text", 12), borderwidth=0, relief="flat")
+        font=(FONT_TEXT, 12), borderwidth=0, relief="flat")
     s.configure("TT.Treeview.Heading",
         background=SIDEBAR_BG, foreground=ACCENT,
-        font=("SF Pro Text", 11, "bold"), relief="flat", padding=(6, 8))
+        font=(FONT_TEXT, 11, "bold"), relief="flat", padding=(6, 8))
     s.map("TT.Treeview",
         background=[("selected", TREE_SEL)],
         foreground=[("selected", TEXT)])
@@ -140,7 +154,7 @@ class HumidorPage(ctk.CTkFrame):
         top.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(top, text="🚬  Humidor",
-                     font=("SF Pro Display", 20, "bold"),
+                     font=(FONT_DISPLAY, 20, "bold"),
                      text_color=TEXT).grid(row=0, column=0, sticky="w")
 
         self._search_var = tk.StringVar()
@@ -170,7 +184,7 @@ class HumidorPage(ctk.CTkFrame):
         tree_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 8))
 
         self._status = ctk.CTkLabel(self, text="",
-                                    font=("SF Pro Text", 11),
+                                    font=(FONT_TEXT, 11),
                                     text_color=TEXT_DIM)
         self._status.grid(row=2, column=0, sticky="w", padx=22, pady=(0, 10))
 
@@ -223,7 +237,7 @@ class PickAStickPage(ctk.CTkFrame):
         self.grid_rowconfigure(2, weight=1)
 
         ctk.CTkLabel(self, text="🎲  Pick-a-Stick",
-                     font=("SF Pro Display", 20, "bold"),
+                     font=(FONT_DISPLAY, 20, "bold"),
                      text_color=TEXT,
                      ).grid(row=0, column=0, pady=(20, 0), padx=20, sticky="w")
 
@@ -233,7 +247,7 @@ class PickAStickPage(ctk.CTkFrame):
         bar.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
         def _lbl(text: str, col: int) -> None:
-            ctk.CTkLabel(bar, text=text, font=("SF Pro Text", 11),
+            ctk.CTkLabel(bar, text=text, font=(FONT_TEXT, 11),
                          text_color=TEXT_DIM,
                          ).grid(row=0, column=col, padx=16, pady=(10, 2), sticky="w")
 
@@ -242,7 +256,7 @@ class PickAStickPage(ctk.CTkFrame):
                                   fg_color=SIDEBAR_BG, button_color=ACCENT_DIM,
                                   button_hover_color=ACCENT, text_color=TEXT,
                                   dropdown_fg_color=CARD, dropdown_text_color=TEXT,
-                                  font=("SF Pro Text", 12), width=160)
+                                  font=(FONT_TEXT, 12), width=160)
             w.set(values[0])
             w.grid(row=1, column=col, padx=16, pady=(2, 14), sticky="w")
             return w
@@ -262,7 +276,7 @@ class PickAStickPage(ctk.CTkFrame):
 
         ctk.CTkButton(bar, text="🎲  Pick a Stick",
                       fg_color=ACCENT, hover_color=ACCENT_HOV,
-                      text_color="#1a1917", font=("SF Pro Display", 14, "bold"),
+                      text_color="#1a1917", font=(FONT_DISPLAY, 14, "bold"),
                       height=42, command=self._pick,
                       ).grid(row=0, column=3, rowspan=2, padx=(0, 16), pady=10, sticky="e")
 
@@ -275,30 +289,30 @@ class PickAStickPage(ctk.CTkFrame):
         self._empty = ctk.CTkLabel(
             self._card,
             text="Set your filters and press 🎲 Pick a Stick",
-            font=("SF Pro Display", 16), text_color=TEXT_DIM)
+            font=(FONT_DISPLAY, 16), text_color=TEXT_DIM)
         self._empty.grid(row=0, column=0)
 
         # Result widgets (placed later on first pick)
         self._result = ctk.CTkFrame(self._card, fg_color="transparent")
         self._r_name = ctk.CTkLabel(self._result, text="",
-                                    font=("SF Pro Display", 22, "bold"),
+                                    font=(FONT_DISPLAY, 22, "bold"),
                                     text_color=ACCENT, wraplength=700)
         self._r_name.pack(pady=(36, 6))
         self._r_details = ctk.CTkLabel(self._result, text="",
-                                       font=("SF Pro Text", 14),
+                                       font=(FONT_TEXT, 14),
                                        text_color=TEXT_DIM)
         self._r_details.pack(pady=(0, 8))
         self._r_ratings = ctk.CTkLabel(self._result, text="",
-                                       font=("SF Pro Display", 18),
+                                       font=(FONT_DISPLAY, 18),
                                        text_color=TEXT)
         self._r_ratings.pack(pady=(0, 10))
         self._r_notes = ctk.CTkLabel(self._result, text="",
-                                     font=("SF Pro Text", 13),
+                                     font=(FONT_TEXT, 13),
                                      text_color=TEXT_DIM, wraplength=620)
         self._r_notes.pack(pady=(0, 18))
         ctk.CTkButton(self._result, text="Pick Again",
                       fg_color=ACCENT_DIM, hover_color=ACCENT_HOV,
-                      text_color=ACCENT, font=("SF Pro Text", 13),
+                      text_color=ACCENT, font=(FONT_TEXT, 13),
                       command=self._pick).pack(pady=(0, 28))
 
     def _pick(self) -> None:
@@ -401,11 +415,11 @@ class PipeTobaccoPage(ctk.CTkFrame):
         top.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(top, text="🌿  Pipe Tobacco",
-                     font=("SF Pro Display", 20, "bold"),
+                     font=(FONT_DISPLAY, 20, "bold"),
                      text_color=TEXT).grid(row=0, column=0, sticky="w")
         ctk.CTkButton(top, text="+ Add", width=90, height=34,
                       fg_color=ACCENT, hover_color=ACCENT_HOV,
-                      text_color="#1a1917", font=("SF Pro Text", 13, "bold"),
+                      text_color="#1a1917", font=(FONT_TEXT, 13, "bold"),
                       command=self._add,
                       ).grid(row=0, column=1, sticky="e")
         ctk.CTkButton(top, text="Delete", width=80, height=34,
@@ -465,11 +479,11 @@ class JournalPage(ctk.CTkFrame):
         top.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(top, text="📖  Smoke Journal",
-                     font=("SF Pro Display", 20, "bold"),
+                     font=(FONT_DISPLAY, 20, "bold"),
                      text_color=TEXT).grid(row=0, column=0, sticky="w")
         ctk.CTkButton(top, text="+ Log", width=90, height=34,
                       fg_color=ACCENT, hover_color=ACCENT_HOV,
-                      text_color="#1a1917", font=("SF Pro Text", 13, "bold"),
+                      text_color="#1a1917", font=(FONT_TEXT, 13, "bold"),
                       command=self._add,
                       ).grid(row=0, column=1, sticky="e")
         ctk.CTkButton(top, text="Delete", width=80, height=34,
@@ -530,7 +544,7 @@ class ImportPage(ctk.CTkFrame):
         self.grid_rowconfigure(1, weight=1)
 
         ctk.CTkLabel(self, text="📥  Import from CigarScanner",
-                     font=("SF Pro Display", 20, "bold"),
+                     font=(FONT_DISPLAY, 20, "bold"),
                      text_color=TEXT,
                      ).grid(row=0, column=0, pady=(20, 0), padx=20, sticky="w")
 
@@ -538,7 +552,7 @@ class ImportPage(ctk.CTkFrame):
         card.grid(row=1, column=0, padx=80, pady=40, sticky="")
 
         ctk.CTkLabel(card, text="How it works",
-                     font=("SF Pro Display", 16, "bold"),
+                     font=(FONT_DISPLAY, 16, "bold"),
                      text_color=ACCENT).pack(pady=(28, 10))
 
         ctk.CTkLabel(card,
@@ -551,7 +565,7 @@ class ImportPage(ctk.CTkFrame):
                 "5. The script exports  humidor_export.csv  into the output/ folder.\n\n"
                 "6. Click  Reload Humidor  below to refresh the app with new data."
             ),
-            font=("SF Pro Text", 13), text_color=TEXT_DIM,
+            font=(FONT_TEXT, 13), text_color=TEXT_DIM,
             justify="left", anchor="w",
             ).pack(padx=32, pady=(0, 28))
 
@@ -560,30 +574,50 @@ class ImportPage(ctk.CTkFrame):
 
         ctk.CTkButton(btn_row, text="Open Exporter",
                       fg_color=ACCENT, hover_color=ACCENT_HOV,
-                      text_color="#1a1917", font=("SF Pro Display", 13, "bold"),
+                      text_color="#1a1917", font=(FONT_DISPLAY, 13, "bold"),
                       height=42, width=190, command=self._open_terminal,
                       ).grid(row=0, column=0, padx=8)
 
         ctk.CTkButton(btn_row, text="⟳  Reload Humidor",
                       fg_color=CARD, hover_color=ACCENT_DIM,
-                      text_color=ACCENT, font=("SF Pro Text", 13),
+                      text_color=ACCENT, font=(FONT_TEXT, 13),
                       height=42, width=170, command=self._reload,
                       ).grid(row=0, column=1, padx=8)
 
         self._status = ctk.CTkLabel(card, text="",
-                                    font=("SF Pro Text", 12),
+                                    font=(FONT_TEXT, 12),
                                     text_color=TEXT_DIM)
         self._status.pack(pady=(4, 28))
 
     def _open_terminal(self) -> None:
-        run_sh = PROJECT_DIR / "run.sh"
-        # Escape the path for embedding inside an AppleScript string
-        escaped = str(run_sh).replace("\\", "\\\\").replace('"', '\\"')
+        run_script = PROJECT_DIR / ("run.bat" if _OS == "Windows" else "run.sh")
         try:
-            subprocess.Popen([
-                "osascript", "-e",
-                f'tell application "Terminal" to do script "bash \\"{escaped}\\""',
-            ])
+            if _OS == "Darwin":
+                escaped = str(run_script).replace("\\", "\\\\").replace('"', '\\"')
+                subprocess.Popen([
+                    "osascript", "-e",
+                    f'tell application "Terminal" to do script "bash \\"{escaped}\\""',
+                ])
+            elif _OS == "Windows":
+                subprocess.Popen(["cmd.exe", "/c", "start", "cmd.exe", "/k", str(run_script)])
+            else:
+                launched = False
+                for term, flag in [
+                    ("x-terminal-emulator", "-e"),
+                    ("gnome-terminal", "--"),
+                    ("xterm", "-e"),
+                    ("konsole", "-e"),
+                ]:
+                    try:
+                        subprocess.Popen([term, flag, "bash", str(run_script)])
+                        launched = True
+                        break
+                    except FileNotFoundError:
+                        continue
+                if not launched:
+                    messagebox.showerror("Error",
+                        "No terminal emulator found.\nRun run.sh manually.")
+                    return
             self._status.configure(
                 text="Terminal opened — follow the steps above, then click Reload.")
         except Exception as e:
@@ -628,7 +662,7 @@ class _BaseDialog(ctk.CTkToplevel):
                               border_color=ACCENT_DIM, text_color=TEXT)
 
     def _lbl(self, parent: tk.Misc, text: str) -> None:
-        ctk.CTkLabel(parent, text=text, font=("SF Pro Text", 12),
+        ctk.CTkLabel(parent, text=text, font=(FONT_TEXT, 12),
                      text_color=TEXT_DIM, anchor="w").pack(fill="x", pady=(8, 2))
 
     # ── Value extractors ──
@@ -827,11 +861,11 @@ class SmokingPipesPage(ctk.CTkFrame):
         top.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(top, text="🪵  My Pipes",
-                     font=("SF Pro Display", 20, "bold"),
+                     font=(FONT_DISPLAY, 20, "bold"),
                      text_color=TEXT).grid(row=0, column=0, sticky="w")
         ctk.CTkButton(top, text="+ Add", width=90, height=34,
                       fg_color=ACCENT, hover_color=ACCENT_HOV,
-                      text_color="#1a1917", font=("SF Pro Text", 13, "bold"),
+                      text_color="#1a1917", font=(FONT_TEXT, 13, "bold"),
                       command=self._add,
                       ).grid(row=0, column=1, sticky="e")
         ctk.CTkButton(top, text="Delete", width=80, height=34,
@@ -966,7 +1000,7 @@ class _NavBtn(ctk.CTkButton):
         super().__init__(parent, text=text, command=command,
                          anchor="w", fg_color="transparent",
                          text_color=TEXT_DIM, hover_color=CARD,
-                         font=("SF Pro Display", 13),
+                         font=(FONT_DISPLAY, 13),
                          corner_radius=8, height=44)
 
     def set_active(self, active: bool) -> None:
@@ -1001,10 +1035,10 @@ class App(ctk.CTk):
         sb.grid_rowconfigure(10, weight=1)
 
         ctk.CTkLabel(sb, text="🚬",
-                     font=("SF Pro Display", 34),
+                     font=(FONT_DISPLAY, 34),
                      text_color=ACCENT).grid(row=0, column=0, pady=(30, 4))
         ctk.CTkLabel(sb, text="TobaccoTown",
-                     font=("SF Pro Display", 14, "bold"),
+                     font=(FONT_DISPLAY, 14, "bold"),
                      text_color=TEXT).grid(row=1, column=0, pady=(0, 26))
 
         nav = [
