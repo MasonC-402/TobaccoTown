@@ -1,0 +1,36 @@
+# ---- Python / uv ----
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.uv/
+
+# ---- Cigar Scanner exporter ----
+# Saved browser session (holds your authenticated login — never commit/sync)
+**/.cs_profile/
+# Generated outputs and debug dumps
+**/output/
+**/debug/
+**/humidor_export.csv
+**/humidor_raw.json
+
+# ---- macOS / iCloud ----
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.icloud
+
+# ---- App bundle binary (regenerate with build_app.sh) ----
+TobaccoTown.app/Contents/MacOS/TobaccoTown
+
+# ---- Local data ----
+data/
+*.db
+*.code-workspace
+
+# ---- Editors ----
+.vscode/
+.idea/
+*.swp
