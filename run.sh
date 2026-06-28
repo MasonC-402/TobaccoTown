@@ -1,17 +1,7 @@
 #!/bin/bash
 # ****************************
 # *** AUTHOR/MAINTAINER ***
-#    MASON CLEMONS | 2026
-#
-# *** ABOUT ***
-# Runs the Cigar Scanner humidor export inside the uv-managed environment,
-# making sure uv, the playwright package, and the Chromium browser binary are
-# all present first.
-#
-# NOTE: This intentionally does NOT delete .cs_profile on every run. That
-# directory keeps you logged in between runs so you don't have to clear a
-# Cloudflare challenge and log in each time. Only wipe it when the session is
-# actually broken: run with  ./run.sh --reset
+#    MASON C. | 2026
 # ****************************
 
 set -euo pipefail
