@@ -8,15 +8,33 @@ MACOS="$SCRIPT_DIR/TobaccoTown.app/Contents/MacOS"
 LAUNCHER="$MACOS/TobaccoTown"
 PLIST="$SCRIPT_DIR/TobaccoTown.app/Contents/Info.plist"
 
+# --- ensure uv is available ----------------------------------------------
+if ! command -v uv &>/dev/null; then
+    echo "Error: uv is not installed. Install it first, then re-run this script."
+    echo "  brew install uv   or   curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
+fi
+
+# --- set up the Python environment ---------------------------------------
+echo "Setting up Python environment..."
+cd "$SCRIPT_DIR"
+uv sync
+
+# --- build the .app bundle -----------------------------------------------
 mkdir -p "$MACOS"
 
 cat > "$LAUNCHER" << 'EOF'
 #!/bin/bash
-# Resolve absolute path to this script's directory (MacOS/)
 MACOS="$(cd "$(dirname "$0")" && pwd -P)"
-# MacOS -> Contents -> TobaccoTown.app -> project root
 PROJECT="$(dirname "$(dirname "$(dirname "$MACOS")")")"
-exec "$PROJECT/.venv/bin/python3" "$PROJECT/app.py"
+PYTHON="$PROJECT/.venv/bin/python3"
+
+if [[ ! -x "$PYTHON" ]]; then
+    osascript -e 'display alert "TobaccoTown" message "Python environment not found.\n\nRun build_app.sh in Terminal to set up the app." as critical'
+    exit 1
+fi
+
+exec "$PYTHON" "$PROJECT/app.py"
 EOF
 
 cat > "$PLIST" << 'EOF'
