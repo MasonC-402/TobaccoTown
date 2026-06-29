@@ -35,6 +35,12 @@ if [[ ! -x "$PYTHON" ]]; then
     exit 1
 fi
 
+# uv's standalone Python hardcodes Tcl/Tk paths to the build machine.
+# Derive the real location from the Python base prefix at runtime.
+PYTHON_BASE=$("$PYTHON" -c "import sys; print(sys.base_prefix)")
+export TCL_LIBRARY="$PYTHON_BASE/lib/tcl8.6"
+export TK_LIBRARY="$PYTHON_BASE/lib/tk8.6"
+
 "$PYTHON" "$PROJECT/app.py" > "$LOG" 2>&1
 EXIT=$?
 if [[ $EXIT -ne 0 ]]; then
