@@ -1235,7 +1235,21 @@ class App(ctk.CTk):
         self._pages["humidor"]._load()  # type: ignore[attr-defined]
 
 
+def _set_macos_dock_icon() -> None:
+    icon_path = PROJECT_DIR / "assets" / "icon.png"
+    if not icon_path.exists():
+        return
+    try:
+        from AppKit import NSApplication, NSImage
+        ns_img = NSImage.alloc().initWithContentsOfFile_(str(icon_path))
+        NSApplication.sharedApplication().setApplicationIconImage_(ns_img)
+    except Exception:
+        pass
+
+
 def main() -> None:
+    if _OS == "Darwin":
+        _set_macos_dock_icon()
     app = App()
     app.mainloop()
 

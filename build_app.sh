@@ -101,7 +101,13 @@ EOF
 
 chmod +x "$LAUNCHER"
 xattr -cr "$SCRIPT_DIR/TobaccoTown.app"
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
-    -f "$SCRIPT_DIR/TobaccoTown.app" 2>/dev/null || true
+
+# Register with Launch Services and flush the icon cache so macOS
+# picks up any updated icon immediately (no stale cached version).
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$LSREGISTER" -f "$SCRIPT_DIR/TobaccoTown.app" 2>/dev/null || true
+"$LSREGISTER" -kill -r -domain local -domain user 2>/dev/null || true
+touch "$SCRIPT_DIR/TobaccoTown.app"
+killall Dock 2>/dev/null || true
 
 echo "Done. Double-click TobaccoTown.app to launch."

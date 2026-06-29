@@ -10,4 +10,5 @@ dependencies = [
     "playwright>=1.60.0",
     "ruff>=0.15.20",
     "ty>=0.0.55",
+    "pyobjc-framework-Cocoa>=10.0; sys_platform == 'darwin'",
 ]
