@@ -17,6 +17,20 @@ def _conn():
 def init():
     with _conn() as c:
         c.executescript("""
+            CREATE TABLE IF NOT EXISTS humidor_cigar (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                name         TEXT NOT NULL,
+                brand        TEXT    DEFAULT '',
+                quantity     INTEGER DEFAULT 0,
+                avg_rating   REAL,
+                my_rating    INTEGER,
+                length       TEXT    DEFAULT '',
+                ring_gauge   INTEGER,
+                smoking_time INTEGER,
+                price_paid   REAL,
+                notes        TEXT    DEFAULT '',
+                date_added   TEXT    DEFAULT (date('now'))
+            );
             CREATE TABLE IF NOT EXISTS pipe_tobacco (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
                 name       TEXT NOT NULL,
@@ -59,6 +73,78 @@ def init():
                 created_at TEXT    DEFAULT (datetime('now'))
             );
         """)
+
+
+def humidor_all():
+    with _conn() as c:
+        return [dict(r) for r in
+                c.execute("SELECT * FROM humidor_cigar ORDER BY name").fetchall()]
+
+
+def humidor_add(name, brand, quantity, my_rating, length, ring_gauge,
+                smoking_time, price_paid, notes):
+    with _conn() as c:
+        c.execute(
+            "INSERT INTO humidor_cigar"
+            " (name,brand,quantity,my_rating,length,ring_gauge,smoking_time,price_paid,notes)"
+            " VALUES (?,?,?,?,?,?,?,?,?)",
+            (name, brand, quantity, my_rating, length, ring_gauge,
+             smoking_time, price_paid, notes),
+        )
+
+
+def humidor_update(row_id, name, brand, quantity, my_rating, length,
+                   ring_gauge, smoking_time, price_paid, notes):
+    with _conn() as c:
+        c.execute(
+            "UPDATE humidor_cigar"
+            " SET name=?,brand=?,quantity=?,my_rating=?,length=?,ring_gauge=?,"
+            "     smoking_time=?,price_paid=?,notes=?"
+            " WHERE id=?",
+            (name, brand, quantity, my_rating, length, ring_gauge,
+             smoking_time, price_paid, notes, row_id),
+        )
+
+
+def humidor_delete(row_id):
+    with _conn() as c:
+        c.execute("DELETE FROM humidor_cigar WHERE id=?", (row_id,))
+
+
+def humidor_upsert_from_csv(rows):
+    """Import CigarScanner CSV rows into the native humidor table (upsert by name)."""
+    with _conn() as c:
+        for r in rows:
+            name = str(r.get("Name") or "").strip()
+            if not name:
+                continue
+            existing = c.execute(
+                "SELECT id FROM humidor_cigar WHERE name=?", (name,)
+            ).fetchone()
+            qty = r.get("Quantity")
+            my_r = r.get("MyRating")
+            avg_r = r.get("AvgRating")
+            ring = r.get("RingGauge")
+            smoke = r.get("SmokingTime")
+            price = r.get("PricePaid")
+            length = str(r.get("Length") or "")
+            notes = str(r.get("MyNote") or r.get("MyComment") or "")
+            if existing:
+                c.execute(
+                    "UPDATE humidor_cigar"
+                    " SET quantity=?,avg_rating=?,my_rating=?,length=?,"
+                    "     ring_gauge=?,smoking_time=?,price_paid=?,notes=?"
+                    " WHERE id=?",
+                    (qty, avg_r, my_r, length, ring, smoke, price, notes, existing[0]),
+                )
+            else:
+                c.execute(
+                    "INSERT INTO humidor_cigar"
+                    " (name,quantity,avg_rating,my_rating,length,ring_gauge,"
+                    "  smoking_time,price_paid,notes)"
+                    " VALUES (?,?,?,?,?,?,?,?,?)",
+                    (name, qty, avg_r, my_r, length, ring, smoke, price, notes),
+                )
 
 
 def pipe_all():

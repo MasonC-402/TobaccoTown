@@ -102,7 +102,7 @@ def _parse_length(s: str) -> float | None:
     return whole + frac
 
 
-def _load_humidor() -> list[dict]:
+def _load_humidor_csv() -> list[dict]:
     if not HUMIDOR_CSV.exists() or pd is None:
         return []
     try:
@@ -111,6 +111,17 @@ def _load_humidor() -> list[dict]:
         return df.to_dict("records")
     except Exception:
         return []
+
+
+def _load_humidor() -> list[dict]:
+    rows = db.humidor_all()
+    if not rows:
+        # First-run migration: pull existing CSV data into the db automatically.
+        csv_rows = _load_humidor_csv()
+        if csv_rows:
+            db.humidor_upsert_from_csv(csv_rows)
+            rows = db.humidor_all()
+    return rows
 
 
 def _make_tree(
@@ -165,10 +176,26 @@ class HumidorPage(ctk.CTkFrame):
                      text_color=TEXT, width=240, height=34,
                      ).grid(row=0, column=1, sticky="e", padx=(10, 0))
 
-        ctk.CTkButton(top, text="⟳  Refresh", width=100, height=34,
+        ctk.CTkButton(top, text="+ Add", width=90, height=34,
+                      fg_color=ACCENT, hover_color=ACCENT_HOV,
+                      text_color="#1a1917", font=(FONT_TEXT, 13, "bold"),
+                      command=self._add,
+                      ).grid(row=0, column=2, sticky="e", padx=(8, 0))
+
+        ctk.CTkButton(top, text="Edit", width=76, height=34,
+                      fg_color=CARD, hover_color=ACCENT_DIM,
+                      text_color=ACCENT, command=self._edit,
+                      ).grid(row=0, column=3, sticky="e", padx=(6, 0))
+
+        ctk.CTkButton(top, text="Delete", width=76, height=34,
+                      fg_color=CARD, hover_color=DANGER,
+                      text_color=TEXT, command=self._delete,
+                      ).grid(row=0, column=4, sticky="e", padx=(6, 0))
+
+        ctk.CTkButton(top, text="⟳", width=40, height=34,
                       fg_color=CARD, hover_color=ACCENT_DIM,
                       text_color=ACCENT, command=self._load,
-                      ).grid(row=0, column=2, sticky="e", padx=(8, 0))
+                      ).grid(row=0, column=5, sticky="e", padx=(6, 0))
 
         cols = [
             ("name",  "Cigar Name",   320),
@@ -181,6 +208,7 @@ class HumidorPage(ctk.CTkFrame):
             ("price", "Price Paid",    80),
         ]
         self._tree, tree_frame = _make_tree(self, cols)
+        self._tree.bind("<Double-1>", lambda _e: self._edit())
         tree_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 8))
 
         self._status = ctk.CTkLabel(self, text="",
@@ -198,19 +226,19 @@ class HumidorPage(ctk.CTkFrame):
         for item in self._tree.get_children():
             self._tree.delete(item)
         for r in rows:
-            lv = _parse_length(str(r.get("Length") or ""))
-            avg = _sf(r.get("AvgRating"))
-            mine = _sf(r.get("MyRating"))
-            qty = _sf(r.get("Quantity"))
-            ring = _sf(r.get("RingGauge"))
-            smoke = _sf(r.get("SmokingTime"))
-            price = _sf(r.get("PricePaid"))
-            self._tree.insert("", "end", values=(
-                r.get("Name", ""),
+            lv = _parse_length(str(r.get("length") or ""))
+            avg = _sf(r.get("avg_rating"))
+            mine = _sf(r.get("my_rating"))
+            qty = _sf(r.get("quantity"))
+            ring = _sf(r.get("ring_gauge"))
+            smoke = _sf(r.get("smoking_time"))
+            price = _sf(r.get("price_paid"))
+            self._tree.insert("", "end", iid=str(r["id"]), values=(
+                r.get("name", ""),
                 str(int(qty)) if qty is not None else "0",
                 f"{avg:.2f}" if avg is not None else "",
                 str(int(mine)) if mine is not None else "",
-                f'{lv:.2f}"' if lv else str(r.get("Length") or ""),
+                f'{lv:.2f}"' if lv else str(r.get("length") or ""),
                 str(int(ring)) if ring is not None else "",
                 str(int(smoke)) if smoke is not None else "",
                 f"${price:.2f}" if price is not None else "",
@@ -226,8 +254,30 @@ class HumidorPage(ctk.CTkFrame):
         q = self._search_var.get().lower().strip()
         self._render(self._data if not q else [
             r for r in self._data
-            if q in str(r.get("Name", "")).lower()
+            if q in str(r.get("name", "")).lower()
         ])
+
+    def _add(self) -> None:
+        _CigarDialog(self.winfo_toplevel(), on_save=self._load)
+
+    def _edit(self) -> None:
+        sel = self._tree.selection()
+        if not sel:
+            messagebox.showinfo("No Selection", "Select a cigar to edit.")
+            return
+        row_id = int(sel[0])
+        record = next((r for r in self._data if r["id"] == row_id), None)
+        if record:
+            _CigarDialog(self.winfo_toplevel(), on_save=self._load, record=record)
+
+    def _delete(self) -> None:
+        sel = self._tree.selection()
+        if not sel:
+            messagebox.showinfo("No Selection", "Select a cigar to delete.")
+            return
+        if messagebox.askyesno("Confirm", "Delete selected cigar?"):
+            db.humidor_delete(int(sel[0]))
+            self._load()
 
 
 class PickAStickPage(ctk.CTkFrame):
@@ -323,19 +373,19 @@ class PickAStickPage(ctk.CTkFrame):
             return
 
         if self._f_stock.get():
-            pool = [c for c in pool if (c.get("Quantity") or 0) > 0]
+            pool = [c for c in pool if (c.get("quantity") or 0) > 0]
 
         rf = self._f_rating.get()
         if rf != "Any":
             threshold = float(rf.rstrip("+"))
             pool = [c for c in pool
-                    if _sf(c.get("AvgRating")) is not None
-                    and _sf(c.get("AvgRating")) >= threshold]  # type: ignore[operator]
+                    if _sf(c.get("my_rating")) is not None
+                    and _sf(c.get("my_rating")) >= threshold]  # type: ignore[operator]
 
         ring_f = self._f_ring.get()
         if ring_f != "Any":
             def _ring_ok(c: dict) -> bool:
-                r = _sf(c.get("RingGauge"))
+                r = _sf(c.get("ring_gauge"))
                 if r is None:
                     return True
                 if "Small" in ring_f:
@@ -350,7 +400,7 @@ class PickAStickPage(ctk.CTkFrame):
                 "No cigars matched those filters.\nTry loosening the criteria.")
             return
 
-        weights = [max(1, int(c.get("Quantity") or 1)) for c in pool]
+        weights = [max(1, int(c.get("quantity") or 1)) for c in pool]
         winner = random.choices(pool, weights=weights, k=1)[0]
         self._spin(pool, winner)
 
@@ -373,24 +423,23 @@ class PickAStickPage(ctk.CTkFrame):
         _step(0)
 
     def _show(self, c: dict) -> None:
-        self._r_name.configure(text=c.get("Name", ""))
+        self._r_name.configure(text=c.get("name", ""))
 
-        lv = _parse_length(str(c.get("Length") or ""))
-        ring = _sf(c.get("RingGauge"))
-        smoke = c.get("SmokingTime")
+        lv = _parse_length(str(c.get("length") or ""))
+        ring = _sf(c.get("ring_gauge"))
+        smoke_f = _sf(c.get("smoking_time"))
         parts = []
         if lv:
             parts.append(f'{lv:.2f}"')
         if ring:
             parts.append(f"Ring {int(ring)}")
-        smoke_f = _sf(smoke)
         if smoke_f is not None:
             parts.append(f"~{int(smoke_f)} min")
         self._r_details.configure(text="  ·  ".join(parts))
 
-        avg = _sf(c.get("AvgRating"))
-        mine = _sf(c.get("MyRating"))
-        qty = c.get("Quantity")
+        avg = _sf(c.get("avg_rating"))
+        mine = _sf(c.get("my_rating"))
+        qty = c.get("quantity")
         rparts = []
         if avg is not None:
             rparts.append(f"★ {avg:.2f} avg")
@@ -400,7 +449,7 @@ class PickAStickPage(ctk.CTkFrame):
             rparts.append(f"× {int(qty)} in humidor")
         self._r_ratings.configure(text="   ".join(rparts))
 
-        note = str(c.get("MyNote") or c.get("MyComment") or "").strip()
+        note = str(c.get("notes") or "").strip()
         self._r_notes.configure(text=note)
 
 
@@ -624,8 +673,11 @@ class ImportPage(ctk.CTkFrame):
             messagebox.showerror("Error", f"Could not open Terminal:\n{e}")
 
     def _reload(self) -> None:
+        csv_rows = _load_humidor_csv()
+        if csv_rows:
+            db.humidor_upsert_from_csv(csv_rows)
         self._on_imported()
-        count = len(_load_humidor())
+        count = len(db.humidor_all())
         self._status.configure(text=f"Reloaded — {count} cigars now in humidor.")
 
 
@@ -700,6 +752,98 @@ class _BaseDialog(ctk.CTkToplevel):
                       hover_color=ACCENT_HOV, text_color="#1a1917",
                       command=on_save,
                       ).grid(row=0, column=1, padx=(6, 0), sticky="ew")
+
+
+class _CigarDialog(_BaseDialog):
+    def __init__(self, parent: tk.Misc, on_save, record: dict | None = None) -> None:
+        super().__init__(parent, "Edit Cigar" if record else "Add Cigar", "480x620")
+        self._cb = on_save
+        self._record = record
+
+        body = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=20, pady=10)
+
+        def _prefill(w: ctk.CTkEntry, key: str) -> None:
+            if record and record.get(key) is not None:
+                w.insert(0, str(record[key]))
+
+        def _prefill_int(w: ctk.CTkEntry, key: str) -> None:
+            if record:
+                v = _sf(record.get(key))
+                if v is not None:
+                    w.insert(0, str(int(v)))
+
+        self._lbl(body, "Name *")
+        self.e_name = self._entry(body)
+        _prefill(self.e_name, "name")
+        self.e_name.pack(fill="x")
+
+        self._lbl(body, "Brand")
+        self.e_brand = self._entry(body)
+        _prefill(self.e_brand, "brand")
+        self.e_brand.pack(fill="x")
+
+        self._lbl(body, "Quantity")
+        self.e_qty = self._entry(body)
+        _prefill_int(self.e_qty, "quantity")
+        self.e_qty.pack(fill="x")
+
+        self._lbl(body, "My Rating (1–100)")
+        self.e_rating = self._entry(body)
+        _prefill_int(self.e_rating, "my_rating")
+        self.e_rating.pack(fill="x")
+
+        self._lbl(body, 'Length  (e.g.  6"  or  4"7/8)')
+        self.e_len = self._entry(body)
+        _prefill(self.e_len, "length")
+        self.e_len.pack(fill="x")
+
+        self._lbl(body, "Ring Gauge")
+        self.e_ring = self._entry(body)
+        _prefill_int(self.e_ring, "ring_gauge")
+        self.e_ring.pack(fill="x")
+
+        self._lbl(body, "Smoking Time (minutes)")
+        self.e_smoke = self._entry(body)
+        _prefill_int(self.e_smoke, "smoking_time")
+        self.e_smoke.pack(fill="x")
+
+        self._lbl(body, "Price Paid ($)")
+        self.e_price = self._entry(body)
+        if record and _sf(record.get("price_paid")) is not None:
+            self.e_price.insert(0, f"{_sf(record['price_paid']):.2f}")
+        self.e_price.pack(fill="x")
+
+        self._lbl(body, "Notes")
+        self.e_notes = self._textbox(body)
+        if record and record.get("notes"):
+            self.e_notes.insert("1.0", record["notes"])
+        self.e_notes.pack(fill="x")
+
+        self._btn_row(self._save)
+
+    def _save(self) -> None:
+        name = self._v(self.e_name)
+        if not name:
+            messagebox.showwarning("Required", "Name is required.", parent=self)
+            return
+        args = (
+            name,
+            self._v(self.e_brand),
+            self._fi(self.e_qty),
+            self._fi(self.e_rating),
+            self._v(self.e_len),
+            self._fi(self.e_ring),
+            self._fi(self.e_smoke),
+            self._ff(self.e_price),
+            self._v(self.e_notes),
+        )
+        if self._record:
+            db.humidor_update(self._record["id"], *args)
+        else:
+            db.humidor_add(*args)
+        self._cb()
+        self.destroy()
 
 
 class _TobaccoDialog(_BaseDialog):
