@@ -1248,9 +1248,9 @@ def _set_macos_dock_icon() -> None:
 
 
 def main() -> None:
-    if _OS == "Darwin":
-        _set_macos_dock_icon()
     app = App()
+    if _OS == "Darwin":
+        app.after(200, _set_macos_dock_icon)
     app.mainloop()
 
 
