@@ -164,7 +164,7 @@ class HumidorPage(ctk.CTkFrame):
         top.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
         top.grid_columnconfigure(1, weight=1)
 
-        ctk.CTkLabel(top, text="🚬  Humidor",
+        ctk.CTkLabel(top, text="🍂  Humidor",
                      font=(FONT_DISPLAY, 20, "bold"),
                      text_color=TEXT).grid(row=0, column=0, sticky="w")
 
@@ -1178,15 +1178,32 @@ class App(ctk.CTk):
         sb.grid_columnconfigure(0, weight=1)
         sb.grid_rowconfigure(10, weight=1)
 
-        ctk.CTkLabel(sb, text="🚬",
-                     font=(FONT_DISPLAY, 34),
-                     text_color=ACCENT).grid(row=0, column=0, pady=(30, 4))
+        _icon_path = PROJECT_DIR / "assets" / "icon.png"
+        if _icon_path.exists():
+            try:
+                from PIL import Image as _PILImage
+                _ctk_icon = ctk.CTkImage(
+                    light_image=_PILImage.open(_icon_path),
+                    dark_image=_PILImage.open(_icon_path),
+                    size=(52, 52),
+                )
+                ctk.CTkLabel(sb, image=_ctk_icon, text="").grid(
+                    row=0, column=0, pady=(26, 4)
+                )
+            except Exception:
+                ctk.CTkLabel(sb, text="🌿",
+                             font=(FONT_DISPLAY, 34),
+                             text_color=ACCENT).grid(row=0, column=0, pady=(30, 4))
+        else:
+            ctk.CTkLabel(sb, text="🌿",
+                         font=(FONT_DISPLAY, 34),
+                         text_color=ACCENT).grid(row=0, column=0, pady=(30, 4))
         ctk.CTkLabel(sb, text="TobaccoTown",
                      font=(FONT_DISPLAY, 14, "bold"),
                      text_color=TEXT).grid(row=1, column=0, pady=(0, 26))
 
         nav = [
-            ("humidor",  "🚬  Humidor"),
+            ("humidor",  "🍂  Humidor"),
             ("pick",     "🎲  Pick-a-Stick"),
             ("pipe",     "🌿  Pipe Tobacco"),
             ("mypipes",  "🪵  My Pipes"),
