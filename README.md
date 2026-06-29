@@ -1,15 +1,15 @@
 # TobaccoTown
 
-A desktop GUI app for cigar and pipe tobacco enthusiasts. Built with Python and customtkinter.
+A desktop GUI app for cigar and pipe tobacco enthusiasts. Use it to catalog your collection and review cigars and blends. Built with Python and customtkinter.
 
 ## Features
 
-- **Humidor** — browse your cigar collection imported from CigarScanner, with filterable columns (name, brand, size, quantity, rating, price)
+- **Humidor** — browse your cigar collection, add, edit, or remove cigars from your virtual humidor. 
 - **Pick-a-Stick** — randomly pick a cigar from your humidor with an animated slot-machine reveal; filter by brand or size first
 - **Pipe Tobacco** — manage your pipe tobacco collection with blend, type, cut, tin date, quantity, and notes
 - **My Pipes** — inventory of your physical smoking pipes (maker, shape, material, finish, condition, price, notes)
 - **Journal** — tasting notes for any cigar or tobacco you've smoked
-- **Import** — import your humidor from CigarScanner via CSV export
+- **Import** — import your humidor from CigarScanner.
 
 ## Requirements
 
