@@ -28,13 +28,19 @@ cat > "$LAUNCHER" << 'EOF'
 MACOS="$(cd "$(dirname "$0")" && pwd -P)"
 PROJECT="$(dirname "$(dirname "$(dirname "$MACOS")")")"
 PYTHON="$PROJECT/.venv/bin/python3"
+LOG="$PROJECT/tobaccotown.log"
 
 if [[ ! -x "$PYTHON" ]]; then
     osascript -e 'display alert "TobaccoTown" message "Python environment not found.\n\nRun build_app.sh in Terminal to set up the app." as critical'
     exit 1
 fi
 
-exec "$PYTHON" "$PROJECT/app.py"
+"$PYTHON" "$PROJECT/app.py" > "$LOG" 2>&1
+EXIT=$?
+if [[ $EXIT -ne 0 ]]; then
+    ERROR=$(cat "$LOG")
+    osascript -e "display alert \"TobaccoTown failed to start\" message \"$ERROR\" as critical"
+fi
 EOF
 
 cat > "$PLIST" << 'EOF'
