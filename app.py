@@ -407,7 +407,7 @@ class PickAStickPage(ctk.CTkFrame):
     def _spin(self, pool: list[dict], winner: dict) -> None:
         self._empty.grid_remove()
         self._result.grid(row=0, column=0, sticky="n", pady=10)
-        names = [c["Name"] for c in pool]
+        names = [c.get("name", "") for c in pool]
         steps = 14
 
         def _step(i: int) -> None:
